@@ -36,16 +36,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.ResourceBundle;
-import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * A JSONObject is an unordered collection of name/value pairs. Its external
@@ -2300,6 +2294,43 @@ public class JSONObject {
         return ja;
     }
 
+    public Stream<JSONNode> toStream() {
+        List<JSONNode> nodeList = this.getNodes(this, null,-1);
+        return nodeList.stream();
+    }
+
+    private List<JSONNode> getNodes(Object o, Object parent, int index) {
+        List<JSONNode> arr = new ArrayList<>();
+        if (o instanceof JSONObject) {
+            JSONObject jo = (JSONObject) o;
+            for (String key : jo.keySet()) {
+                Object innerVal = jo.get(key);
+                JSONNode jn = new JSONNode(key, innerVal, parent, index);
+                arr.add(jn);
+                arr.addAll(this.getNodes(innerVal, jo, index));
+            }
+        } else if (o instanceof JSONArray) {
+            JSONArray ja = (JSONArray) o;
+            Iterator<Object> ite = ja.iterator();
+            int counter = 0;
+            while (ite.hasNext()) {
+                Object next = ite.next();
+
+                if (next instanceof JSONObject) {
+                    JSONObject jo = (JSONObject) next;
+                    arr.addAll(this.getNodes(next, jo, counter));
+                } else if (next instanceof JSONArray) {
+                    JSONArray ja1 = (JSONArray) next;
+                    arr.addAll(this.getNodes(next, ja1, counter));
+                } else {
+                    JSONNode jn = new JSONNode(null, o, parent, index);
+                    arr.add(jn);
+                }
+                counter += 1;
+            }
+        }
+        return arr;
+    }
     /**
      * Make a JSON text of this JSONObject. For compactness, no whitespace is
      * added. If this would not result in a syntactically correct JSON text,

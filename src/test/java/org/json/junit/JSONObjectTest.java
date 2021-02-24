@@ -24,40 +24,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.json.CDL;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONPointerException;
-import org.json.JSONTokener;
-import org.json.XML;
+import org.json.*;
 import org.json.junit.data.BrokenToString;
 import org.json.junit.data.ExceptionalBean;
 import org.json.junit.data.Fraction;
@@ -3229,5 +3209,29 @@ public class JSONObjectTest {
         jsonObject.clear(); //Clears the JSONObject
         assertTrue("expected jsonObject.length() == 0", jsonObject.length() == 0); //Check if its length is 0
         jsonObject.getInt("key1"); //Should throws org.json.JSONException: JSONObject["asd"] not found
+    }
+
+    @Test
+    public void testToStreamFilterJSONArrayElementsOnly() {
+        JSONObject obj = XML.toJSONObject("<Books><book><title>AAA</title><author>ASmith</author></book><book><title>BBB</title><author>BSmith</author></book></Books>");
+        List<JSONNode> jaElems = obj.toStream().filter(node -> node.isJSONArrayElement()).collect(Collectors.toList());
+        assertEquals(jaElems.size(), 4);
+    }
+
+    @Test
+    public void testExtractTitlesFromStream() {
+        JSONObject obj = XML.toJSONObject("<Books><book><title>AAA</title><author>ASmith</author></book><book><title>BBB</title><author>BSmith</author></book></Books>");
+        List<String> titles = obj.toStream().map(node -> node.getKey()).collect(Collectors.toList());
+        titles.forEach(x -> System.out.println(x));
+        String[] titleArray = new String[]{"Books", "book", "author", "title", "author", "title"};
+        assertArrayEquals(titles.toArray(), titleArray);
+    }
+    @Test
+    public void extractUniqueTitlesFromStream() {
+        JSONObject obj = new JSONObject("{\"swe262_catalog\":{\"swe262_book\":[{\"swe262_price\":44.95,\"swe262_genre\":\"Computer\",\"swe262_author\":\"Gambardella, Matthew\",\"swe262_publish_date\":\"2000-10-01\",\"swe262_description\":\"An in-depth look at creating applications      with XML.\",\"swe262_title\":\"XML Developer's Guide\",\"swe262_id\":\"bk101\"},{\"swe262_price\":5.95,\"swe262_genre\":\"Fantasy\",\"swe262_author\":\"Ralls, Kim\",\"swe262_publish_date\":\"2000-12-16\",\"swe262_description\":\"A former architect battles corporate zombies,      an evil sorceress, and her own childhood to become queen      of the world.\",\"swe262_title\":\"Midnight Rain\",\"swe262_id\":\"bk102\"},{\"swe262_price\":5.95,\"swe262_genre\":\"Fantasy\",\"swe262_author\":\"Corets, Eva\",\"swe262_publish_date\":\"2000-11-17\",\"swe262_description\":\"After the collapse of a nanotechnology      society in England, the young survivors lay the      foundation for a new society.\",\"swe262_title\":\"Maeve Ascendant\",\"swe262_id\":\"bk103\"},{\"swe262_price\":5.95,\"swe262_genre\":\"Fantasy\",\"swe262_author\":\"Corets, Eva\",\"swe262_publish_date\":\"2001-03-10\",\"swe262_description\":\"In post-apocalypse England, the mysterious      agent known only as Oberon helps to create a new life      for the inhabitants of London. Sequel to Maeve      Ascendant.\",\"swe262_title\":\"Oberon's Legacy\",\"swe262_id\":\"bk104\"},{\"swe262_price\":5.95,\"swe262_genre\":\"Fantasy\",\"swe262_author\":\"Corets, Eva\",\"swe262_publish_date\":\"2001-09-10\",\"swe262_description\":\"The two daughters of Maeve, half-sisters,      battle one another for control of England. Sequel to      Oberon's Legacy.\",\"swe262_title\":\"The Sundered Grail\",\"swe262_id\":\"bk105\"},{\"swe262_price\":4.95,\"swe262_genre\":\"Romance\",\"swe262_author\":\"Randall, Cynthia\",\"swe262_publish_date\":\"2000-09-02\",\"swe262_description\":\"When Carla meets Paul at an ornithology      conference, tempers fly as feathers get ruffled.\",\"swe262_title\":\"Lover Birds\",\"swe262_id\":\"bk106\"},{\"swe262_price\":4.95,\"swe262_genre\":\"Romance\",\"swe262_author\":\"Thurman, Paula\",\"swe262_publish_date\":\"2000-11-02\",\"swe262_description\":\"A deep sea diver finds true love twenty      thousand leagues beneath the sea.\",\"swe262_title\":\"Splish Splash\",\"swe262_id\":\"bk107\"},{\"swe262_price\":4.95,\"swe262_genre\":\"Horror\",\"swe262_author\":\"Knorr, Stefan\",\"swe262_publish_date\":\"2000-12-06\",\"swe262_description\":\"An anthology of horror stories about roaches,      centipedes, scorpions  and other insects.\",\"swe262_title\":\"Creepy Crawlies\",\"swe262_id\":\"bk108\"},{\"swe262_price\":6.95,\"swe262_genre\":\"Science Fiction\",\"swe262_author\":\"Kress, Peter\",\"swe262_publish_date\":\"2000-11-02\",\"swe262_description\":\"After an inadvertant trip through a Heisenberg      Uncertainty Device, James Salway discovers the problems      of being quantum.\",\"swe262_title\":\"Paradox Lost\",\"swe262_id\":\"bk109\"},{\"swe262_price\":36.95,\"swe262_genre\":\"Computer\",\"swe262_author\":\"O'Brien, Tim\",\"swe262_publish_date\":\"2000-12-09\",\"swe262_description\":\"Microsoft's .NET initiative is explored in      detail in this deep programmer's reference.\",\"swe262_title\":\"Microsoft .NET: The Programming Bible\",\"swe262_id\":\"bk110\"},{\"swe262_price\":36.95,\"swe262_genre\":\"Computer\",\"swe262_author\":\"O'Brien, Tim\",\"swe262_publish_date\":\"2000-12-01\",\"swe262_description\":\"The Microsoft MSXML3 parser is covered in      detail, with attention to XML DOM interfaces, XSLT processing,      SAX and more.\",\"swe262_title\":\"MSXML3: A Comprehensive Guide\",\"swe262_id\":\"bk111\"},{\"swe262_price\":49.95,\"swe262_genre\":\"Computer\",\"swe262_author\":\"Galos, Mike\",\"swe262_publish_date\":\"2001-04-16\",\"swe262_description\":\"Microsoft Visual Studio 7 is explored in depth,      looking at how Visual Basic, Visual C++, C#, and ASP+ are      integrated into a comprehensive development      environment.\",\"swe262_title\":\"Visual Studio 7: A Comprehensive Guide\",\"swe262_id\":\"bk112\"}]}}");
+        Set<String> uniqueTitles = obj.toStream().map(node -> node.getKey()).filter(key -> key != null).collect(Collectors.toSet());
+        Set<String> titleSet = Stream.of("swe262_catalog", "swe262_author", "swe262_price", "swe262_book", "swe262_genre", "swe262_description", "swe262_id", "swe262_title", "swe262_publish_date").collect(Collectors.toSet());
+        assertEquals(uniqueTitles, titleSet);
+
     }
 }
