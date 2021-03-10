@@ -30,17 +30,14 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -1476,5 +1473,89 @@ public class XMLTest {
 	        fail("Error: " +e.getMessage());
 	    }
     }
-    
+
+    @Test
+    public void testAsyncParseJSONObject() {
+        try {
+            File tempFile = this.testFolder.newFile("testAsyncParseJSONObject.xml");
+            File tempFile1 = this.testFolder.newFile("testAsyncParseJSONObject.json");
+
+            FileWriter fileWriter = new FileWriter(tempFile);
+            try {
+                fileWriter.write("<?xml version=\"1.0\"?><catalog><book id=\"bk101\"><author>Gambardella, Matthew</author><title>XML Developer's Guide</title><genre>Computer</genre><price>44.95</price><publish_date>2000-10-01</publish_date><description>An in-depth look at creating applications\n"
+                        + "      with XML.</description></book><book id=\"bk102\"><author>Ralls, Kim</author><title>Midnight Rain</title><genre>Fantasy</genre><price>5.95</price><publish_date>2000-12-16</publish_date><description>A former architect battles corporate zombies,\n"
+                        + "      an evil sorceress, and her own childhood to become queen\n"
+                        + "      of the world.</description></book><book id=\"bk103\"><author>Corets, Eva</author><title>Maeve Ascendant</title><genre>Fantasy</genre><price>5.95</price><publish_date>2000-11-17</publish_date><description>After the collapse of a nanotechnology\n"
+                        + "      society in England, the young survivors lay the\n"
+                        + "      foundation for a new society.</description></book><book id=\"bk104\"><author>Corets, Eva</author><title>Oberon's Legacy</title><genre>Fantasy</genre><price>5.95</price><publish_date>2001-03-10</publish_date><description>In post-apocalypse England, the mysterious\n"
+                        + "      agent known only as Oberon helps to create a new life\n"
+                        + "      for the inhabitants of London. Sequel to Maeve\n"
+                        + "      Ascendant.</description></book><book id=\"bk105\"><author>Corets, Eva</author><title>The Sundered Grail</title><genre>Fantasy</genre><price>5.95</price><publish_date>2001-09-10</publish_date><description>The two daughters of Maeve, half-sisters,\n"
+                        + "      battle one another for control of England. Sequel to\n"
+                        + "      Oberon's Legacy.</description></book><book id=\"bk106\"><author>Randall, Cynthia</author><title>Lover Birds</title><genre>Romance</genre><price>4.95</price><publish_date>2000-09-02</publish_date><description>When Carla meets Paul at an ornithology\n"
+                        + "      conference, tempers fly as feathers get ruffled.</description></book><book id=\"bk107\"><author>Thurman, Paula</author><title>Splish Splash</title><genre>Romance</genre><price>4.95</price><publish_date>2000-11-02</publish_date><description>A deep sea diver finds true love twenty\n"
+                        + "      thousand leagues beneath the sea.</description></book><book id=\"bk108\"><author>Knorr, Stefan</author><title>Creepy Crawlies</title><genre>Horror</genre><price>4.95</price><publish_date>2000-12-06</publish_date><description>An anthology of horror stories about roaches,\n"
+                        + "      centipedes, scorpions  and other insects.</description></book><book id=\"bk109\"><author>Kress, Peter</author><title>Paradox Lost</title><genre>Science Fiction</genre><price>6.95</price><publish_date>2000-11-02</publish_date><description>After an inadvertant trip through a Heisenberg\n"
+                        + "      Uncertainty Device, James Salway discovers the problems\n"
+                        + "      of being quantum.</description></book><book id=\"bk110\"><author>O'Brien, Tim</author><title>Microsoft .NET: The Programming Bible</title><genre>Computer</genre><price>36.95</price><publish_date>2000-12-09</publish_date><description>Microsoft's .NET initiative is explored in\n"
+                        + "      detail in this deep programmer's reference.</description></book><book id=\"bk111\"><author>O'Brien, Tim</author><title>MSXML3: A Comprehensive Guide</title><genre>Computer</genre><price>36.95</price><publish_date>2000-12-01</publish_date><description>The Microsoft MSXML3 parser is covered in\n"
+                        + "      detail, with attention to XML DOM interfaces, XSLT processing,\n"
+                        + "      SAX and more.</description></book><book id=\"bk112\"><author>Galos, Mike</author><title>Visual Studio 7: A Comprehensive Guide</title><genre>Computer</genre><price>49.95</price><publish_date>2001-04-16</publish_date><description>Microsoft Visual Studio 7 is explored in depth,\n"
+                        + "      looking at how Visual Basic, Visual C++, C#, and ASP+ are\n"
+                        + "      integrated into a comprehensive development\n"
+                        + "      environment.</description></book></catalog>\n"
+                        + "");
+            } finally {
+                fileWriter.close();
+            }
+            FileWriter newFileWriter = new FileWriter(tempFile1);
+            Reader reader = new FileReader(tempFile);
+
+            try {
+                XML.toJSONObject(reader, (JSONObject jo) -> {
+                    jo.write(newFileWriter);
+                    System.out.println(jo.toString());
+                    try {
+                        newFileWriter.close();
+                        JSONObject expectedJsonObject = new JSONObject("{\"catalog\":{\"book\":[{\"author\":\"Gambardella, Matthew\",\"price\":44.95,\"genre\":\"Computer\",\"description\":\"An in-depth look at creating applications\\n      with XML.\",\"id\":\"bk101\",\"title\":\"XML Developer's Guide\",\"publish_date\":\"2000-10-01\"},{\"author\":\"Ralls, Kim\",\"price\":5.95,\"genre\":\"Fantasy\",\"description\":\"A former architect battles corporate zombies,\\n      an evil sorceress, and her own childhood to become queen\\n      of the world.\",\"id\":\"bk102\",\"title\":\"Midnight Rain\",\"publish_date\":\"2000-12-16\"},{\"author\":\"Corets, Eva\",\"price\":5.95,\"genre\":\"Fantasy\",\"description\":\"After the collapse of a nanotechnology\\n      society in England, the young survivors lay the\\n      foundation for a new society.\",\"id\":\"bk103\",\"title\":\"Maeve Ascendant\",\"publish_date\":\"2000-11-17\"},{\"author\":\"Corets, Eva\",\"price\":5.95,\"genre\":\"Fantasy\",\"description\":\"In post-apocalypse England, the mysterious\\n      agent known only as Oberon helps to create a new life\\n      for the inhabitants of London. Sequel to Maeve\\n      Ascendant.\",\"id\":\"bk104\",\"title\":\"Oberon's Legacy\",\"publish_date\":\"2001-03-10\"},{\"author\":\"Corets, Eva\",\"price\":5.95,\"genre\":\"Fantasy\",\"description\":\"The two daughters of Maeve, half-sisters,\\n      battle one another for control of England. Sequel to\\n      Oberon's Legacy.\",\"id\":\"bk105\",\"title\":\"The Sundered Grail\",\"publish_date\":\"2001-09-10\"},{\"author\":\"Randall, Cynthia\",\"price\":4.95,\"genre\":\"Romance\",\"description\":\"When Carla meets Paul at an ornithology\\n      conference, tempers fly as feathers get ruffled.\",\"id\":\"bk106\",\"title\":\"Lover Birds\",\"publish_date\":\"2000-09-02\"},{\"author\":\"Thurman, Paula\",\"price\":4.95,\"genre\":\"Romance\",\"description\":\"A deep sea diver finds true love twenty\\n      thousand leagues beneath the sea.\",\"id\":\"bk107\",\"title\":\"Splish Splash\",\"publish_date\":\"2000-11-02\"},{\"author\":\"Knorr, Stefan\",\"price\":4.95,\"genre\":\"Horror\",\"description\":\"An anthology of horror stories about roaches,\\n      centipedes, scorpions  and other insects.\",\"id\":\"bk108\",\"title\":\"Creepy Crawlies\",\"publish_date\":\"2000-12-06\"},{\"author\":\"Kress, Peter\",\"price\":6.95,\"genre\":\"Science Fiction\",\"description\":\"After an inadvertant trip through a Heisenberg\\n      Uncertainty Device, James Salway discovers the problems\\n      of being quantum.\",\"id\":\"bk109\",\"title\":\"Paradox Lost\",\"publish_date\":\"2000-11-02\"},{\"author\":\"O'Brien, Tim\",\"price\":36.95,\"genre\":\"Computer\",\"description\":\"Microsoft's .NET initiative is explored in\\n      detail in this deep programmer's reference.\",\"id\":\"bk110\",\"title\":\"Microsoft .NET: The Programming Bible\",\"publish_date\":\"2000-12-09\"},{\"author\":\"O'Brien, Tim\",\"price\":36.95,\"genre\":\"Computer\",\"description\":\"The Microsoft MSXML3 parser is covered in\\n      detail, with attention to XML DOM interfaces, XSLT processing,\\n      SAX and more.\",\"id\":\"bk111\",\"title\":\"MSXML3: A Comprehensive Guide\",\"publish_date\":\"2000-12-01\"},{\"author\":\"Galos, Mike\",\"price\":49.95,\"genre\":\"Computer\",\"description\":\"Microsoft Visual Studio 7 is explored in depth,\\n      looking at how Visual Basic, Visual C++, C#, and ASP+ are\\n      integrated into a comprehensive development\\n      environment.\",\"id\":\"bk112\",\"title\":\"Visual Studio 7: A Comprehensive Guide\",\"publish_date\":\"2001-04-16\"}]}}\n");
+                        JSONObject newParsedJSONObject = new JSONObject(Files.lines(Paths.get(tempFile1.getAbsolutePath())).collect(Collectors.joining()));
+                        Util.compareActualVsExpectedJsonObjects(newParsedJSONObject, expectedJsonObject);
+                        Util.compareActualVsExpectedJsonObjects(jo, expectedJsonObject);
+                    }
+                    catch (Exception e) {
+                        fail("Error: "+e.getMessage());
+                    }
+                }, (Exception e) -> fail("Error: " +e.getMessage()));
+
+
+            } finally {
+                reader.close();
+            }
+        } catch (Exception e) {
+            fail("Error: " +e.getMessage());
+        }
+    }
+
+    @Test(expected=AssertionError.class)
+    public void testAsyncParseThrowsException() {
+        try {
+            File tempFile = this.testFolder.newFile("testAsyncParseJSONObject.xml");
+
+            FileWriter fileWriter = new FileWriter(tempFile);
+            try {
+                fileWriter.write("<?xml version=\"1.0\"?></catalog>\n");
+            } finally {
+                fileWriter.close();
+            }
+            Reader reader = new FileReader(tempFile);
+
+            try {
+                XML.toJSONObject(reader, (JSONObject jo) -> { }, (Exception e) -> fail("Error: " +e.getMessage()));
+            } finally {
+                reader.close();
+            }
+        } catch (Exception e) {
+            fail("Error: " +e.getMessage());
+        }
+    }
 }

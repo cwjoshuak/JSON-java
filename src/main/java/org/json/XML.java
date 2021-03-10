@@ -30,6 +30,10 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 
@@ -1009,7 +1013,31 @@ public class XML {
     	}
         return jo;
     }
-    
+    public static void toJSONObject(Reader reader, Consumer<JSONObject> onSuccess, Consumer<Exception> onFailure) {
+        ExecutorService es = Executors.newSingleThreadExecutor();
+        Future<JSONObject> futureTask = es.submit(() -> {
+            JSONObject jo = new JSONObject();
+            XMLTokener tokener = new XMLTokener(reader);
+            XMLParserConfiguration config = XMLParserConfiguration.ORIGINAL;
+            while(tokener.more()) {
+                tokener.skipPast("<");
+                if(tokener.more()) {
+                    try {
+                        parse(tokener, jo, null, config);
+                    } catch(JSONPointerException e) {
+                    }
+                }
+            }
+            return jo;
+        });
+        try {
+            JSONObject jo = futureTask.get();
+            onSuccess.accept(jo);
+        } catch(Exception e){
+            onFailure.accept(e);
+        }
+
+    }
     private static Object replace(JSONObject initialObject, Object query, Object newObject) {
     	JSONObject o = new JSONObject();
     	if (initialObject.similar(query)) {
